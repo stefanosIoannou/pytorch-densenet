@@ -14,8 +14,6 @@ from PIL import Image
 from torch.utils import data as D
 from torch.utils.data.sampler import SubsetRandomSampler
 import random
-import torchsummary
-
 # %%
 print(torch.__version__)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -203,9 +201,6 @@ net = DenseNetBC_100_12()
 net.to(device)
 
 # %%
-torchsummary.summary(net, (3, 32, 32))
-
-# %%
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=initial_lr, momentum=0.9)
 lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer=optimizer, milestones=[int(num_epoch * 0.5), int(num_epoch * 0.75)], gamma=0.1, last_epoch=-1)
@@ -251,6 +246,18 @@ for epoch in range(num_epoch):
          )
 
 print('Finished Training')
+
+# %%
+# Saving the model
+if not os.path.exists('models'):
+    os.mkdir('models')
+model_scripted = torch.jit.script(net)
+model_scripted.save('models/densenetbc_100_12_scripted.pt')
+
+torch.save({'val_idx': torch.Tensor(valid_idx),
+            'model_state_dict': net.state_dict()
+            }, 
+           'models/densenetbc_100_12.pt')
 
 # %%
 class_correct = list(0. for i in range(10))
